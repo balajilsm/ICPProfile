@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Job ICP Selector</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #111827;
+    --muted: #94a3b8;
+    --text: #e5e7eb;
+    --accent: #02BDD5;
+    --accent2: #173A5B;
+    --good: #9AD18E;
+    --ok: #71C6D1;
+    --warn: #C8102E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: linear-gradient(135deg, var(--accent2), #0b2239 60%);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 28px;
+  }
+  .app {
+    width: min(1100px, 100%);
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    padding: 22px 22px 26px;
+  }
+  header {
+    display: grid; gap: 8px; margin-bottom: 16px;
+  }
+  h1 {
+    margin: 0; letter-spacing: 0.2px; font-weight: 700; font-size: 22px;
+  }
+  .controls {
+    display: grid; gap: 10px;
+  }
+  @media (min-width: 740px) {
+    .controls { grid-template-columns: 1.2fr 0.8fr; align-items: end; }
+  }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+  input[type="text"], select {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(17, 24, 39, 0.65);
+    color: var(--text);
+    outline: none;
+  }
+  .row {
+    display: grid; gap: 16px; margin-top: 18px;
+  }
+  @media (min-width: 900px) {
+    .row { grid-template-columns: 1.2fr 1fr; }
+  }
+  .card {
+    background: rgba(2, 189, 213, 0.06);
+    border: 1px solid rgba(2, 189, 213, 0.15);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .meta {
+    display: flex; gap: 12px; align-items: baseline; margin-top: 8px; color: var(--muted);
+    font-size: 13px;
+  }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 14px;
+  }
+  th, td {
+    text-align: left; padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 12px; background: rgba(2,189,213,0.15); border: 1px solid rgba(2,189,213,0.25);
+  }
+  .bars { display: grid; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+  .bar-track {
+    height: 10px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--ok), var(--accent));
+  }
+  .stack { display: grid; gap: 2px; }
+  .muted { color: var(--muted); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.06); color: var(--text);
+    border-radius: 12px; padding: 10px 12px; font-weight: 600;
+  }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .empty { color: var(--muted); padding: 8px; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>ICP Selector</h1>
+      <div class="controls">
+        <div>
+          <label for="jobFilter">Search</label>
+          <input type="text" id="jobFilter" placeholder="Type to filter jobs… (e.g., Finance, Engineering)" />
+        </div>
+        <div>
+          <label for="jobSelect">Job Title</label>
+          <select id="jobSelect" size="1"></select>
+        </div>
+      </div>
+      <div class="meta">
+        <div>Selected: <span id="selJob" class="pill">—</span></div>
+        <div>Employees in cluster: <strong id="selCount">—</strong></div>
+      </div>
+      <div class="actions">
+        <button id="copySummary">Copy Summary</button>
+        <button id="copyJSON">Copy JSON</button>
+        <span class="hint">Tip: Use the search box to quickly narrow the job list.</span>
+      </div>
+    </header>
+
+    <div class="row">
+      <section class="card">
+        <h3 style="margin:0 0 10px 0;">Ideal Features</h3>
+        <table id="featTable">
+          <thead><tr><th>Feature</th><th>Ideal Range / Value</th><th class="muted">Influence (%)</th></tr></thead>
+          <tbody><tr><td colspan="3" class="empty">Select a job to view ideal features…</td></tr></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h3 style="margin:0 0 10px 0;">Key Signals by Influence</h3>
+        <div id="bars" class="bars">
+          <div class="empty">Select a job to view influence signals…</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // Embedded data from recruiter_cheat_sheet_full.json
+    const RAW = [{"job": "Data Conversion Job Family", "count": 33483, "features": [{"feature": "hire_date_year", "ideal": "2006–2019"}, {"feature": "years_of_experience", "ideal": "6–19"}, {"feature": "age", "ideal": "38–64"}, {"feature": "age_group_46-55", "ideal": "46-55"}, {"feature": "job_status_Retired", "ideal": "Retired"}], "influence": [{"feature": "hire_date_year", "influence": 47.099998474121094}, {"feature": "years_of_experience", "influence": 45.20000076293945}, {"feature": "age", "influence": 3.5}, {"feature": "age_group_46-55", "influence": 1.5}, {"feature": "job_status_Retired", "influence": 1.399999976158142}]}, {"job": "Manufacturing and Operations", "count": 19461, "features": [{"feature": "hire_date_year", "ideal": "2018–2024"}, {"feature": "years_of_experience", "ideal": "2–8"}, {"feature": "manager_name_Michael Amason", "ideal": "Michael Amason"}, {"feature": "job_name_PrePress Operator", "ideal": "PrePress Operator"}, {"feature": "location_state_Texas", "ideal": "Texas"}], "influence": [{"feature": "hire_date_year", "influence": 57.79999923706055}, {"feature": "years_of_experience", "influence": 40.20000076293945}, {"feature": "manager_name_Michael Amason", "influence": 0.20000000298023224}, {"feature": "job_name_PrePress Operator", "influence": 0.10000000149011612}, {"feature": "location_state_Texas", "influence": 0.10000000149011612}]}, {"job": "Administration", "count": 3111, "features": [{"feature": "hire_date_year", "ideal": "2020–2023"}, {"feature": "years_of_experience", "ideal": "3–6"}, {"feature": "job_status_Retired", "ideal": "Retired"}, {"feature": "work_location_name_MI - Kalamazoo Carton", "ideal": "MI - Kalamazoo Carton"}, {"feature": "position_name_Shipping Assistant Trainer Lead", "ideal": "Shipping Assistant Trainer Lead"}], "influence": [{"feature": "hire_date_year", "influence": 53.20000076293945}, {"feature": "years_of_experience", "influence": 31.899999618530273}, {"feature": "job_status_Retired", "influence": 3.5999999046325684}, {"feature": "work_location_name_MI - Kalamazoo Carton", "influence": 3.0}, {"feature": "position_name_Shipping Assistant Trainer Lead", "influence": 2.4000000953674316}]}, {"job": "Supply Chain", "count": 553, "features": [{"feature": "hire_date_year", "ideal": "2015–2022"}, {"feature": "years_of_experience", "ideal": "3–11"}, {"feature": "manager_name_Matt Sundquist", "ideal": "Matt Sundquist"}, {"feature": "work_location_name_IL - Carol Stream Carton", "ideal": "IL - Carol Stream Carton"}, {"feature": "business_division_name_CRB Mills", "ideal": "CRB Mills"}], "influence": [{"feature": "hire_date_year", "influence": 62.20000076293945}, {"feature": "years_of_experience", "influence": 35.5}, {"feature": "manager_name_Matt Sundquist", "influence": 0.30000001192092896}, {"feature": "work_location_name_IL - Carol Stream Carton", "influence": 0.30000001192092896}, {"feature": "business_division_name_CRB Mills", "influence": 0.30000001192092896}]}, {"job": "Finance", "count": 403, "features": [{"feature": "job_start_date_2025-03-15", "ideal": "2025-03-15"}, {"feature": "hire_date_year", "ideal": "2018–2023"}, {"feature": "manager_name_Amanda Reeves", "ideal": "Amanda Reeves"}, {"feature": "years_of_experience", "ideal": "2–8"}, {"feature": "business_division_name_Regional - Midwest", "ideal": "Regional - Midwest"}], "influence": [{"feature": "job_start_date_2025-03-15", "influence": 25.399999618530273}, {"feature": "hire_date_year", "influence": 22.700000762939453}, {"feature": "manager_name_Amanda Reeves", "influence": 19.0}, {"feature": "years_of_experience", "influence": 8.100000381469727}, {"feature": "business_division_name_Regional - Midwest", "influence": 7.599999904632568}]}, {"job": "Customer Service", "count": 392, "features": [{"feature": "years_of_experience", "ideal": "3–8"}, {"feature": "hire_date_year", "ideal": "2017–2022"}, {"feature": "work_location_name_OR - North Portland Plant", "ideal": "OR - North Portland Plant"}, {"feature": "manager_name_Deborah Crews", "ideal": "Deborah Crews"}, {"feature": "job_start_date_2024-01-07", "ideal": "2024-01-07"}], "influence": [{"feature": "years_of_experience", "influence": 30.299999237060547}, {"feature": "hire_date_year", "influence": 22.100000381469727}, {"feature": "work_location_name_OR - North Portland Plant", "influence": 16.799999237060547}, {"feature": "manager_name_Deborah Crews", "influence": 10.0}, {"feature": "job_start_date_2024-01-07", "influence": 5.199999809265137}]}, {"job": "Engineering", "count": 382, "features": [{"feature": "hire_date_year", "ideal": "2018–2023"}, {"feature": "years_of_experience", "ideal": "2–8"}, {"feature": "manager_name_Matthew Hodgson", "ideal": "Matthew Hodgson"}, {"feature": "percentage_change", "ideal": "3–4"}, {"feature": "job_start_date_2025-05-21", "ideal": "2025-05-21"}], "influence": [{"feature": "hire_date_year", "influence": 58.70000076293945}, {"feature": "years_of_experience", "influence": 39.70000076293945}, {"feature": "manager_name_Matthew Hodgson", "influence": 1.0}, {"feature": "percentage_change", "influence": 0.20000000298023224}, {"feature": "job_start_date_2025-05-21", "influence": 0.10000000149011612}]}, {"job": "Sales", "count": 305, "features": [{"feature": "years_of_experience", "ideal": "4–14"}, {"feature": "hire_date_year", "ideal": "2012–2021"}, {"feature": "location_state_New Hampshire", "ideal": "New Hampshire"}, {"feature": "change_type_New Hire", "ideal": "New Hire"}, {"feature": "work_location_name_Virtual Office IN US10", "ideal": "Virtual Office IN US10"}], "influence": [{"feature": "years_of_experience", "influence": 74.80000305175781}, {"feature": "hire_date_year", "influence": 23.0}, {"feature": "location_state_New Hampshire", "influence": 1.2000000476837158}, {"feature": "change_type_New Hire", "influence": 0.4000000059604645}, {"feature": "work_location_name_Virtual Office IN US10", "influence": 0.20000000298023224}]}, {"job": "Human Resources", "count": 287, "features": [{"feature": "hire_date_year", "ideal": "2020–2023"}, {"feature": "years_of_experience", "ideal": "2–6"}, {"feature": "work_location_name_CA-East Angus", "ideal": "CA-East Angus"}, {"feature": "manager_name_Paris Curry Wilder", "ideal": "Paris Curry Wilder"}, {"feature": "job_name_Human Resources Director", "ideal": "Human Resources Director"}], "influence": [{"feature": "hire_date_year", "influence": 42.5}, {"feature": "years_of_experience", "influence": 38.20000076293945}, {"feature": "work_location_name_CA-East Angus", "influence": 6.0}, {"feature": "manager_name_Paris Curry Wilder", "influence": 5.0}, {"feature": "job_name_Human Resources Director", "influence": 4.400000095367432}]}, {"job": "Information Technology", "count": 247, "features": [{"feature": "hire_date_year", "ideal": "2018–2023"}, {"feature": "years_of_experience", "ideal": "2–8"}, {"feature": "work_location_name_Virtual Office NH US10", "ideal": "Virtual Office NH US10"}, {"feature": "position_name_Information Technology Sr Manager", "ideal": "Information Technology Sr Manager"}, {"feature": "manager_name_Nathan Ducote", "ideal": "Nathan Ducote"}], "influence": [{"feature": "hire_date_year", "influence": 44.0}, {"feature": "years_of_experience", "influence": 23.700000762939453}, {"feature": "work_location_name_Virtual Office NH US10", "influence": 23.399999618530273}, {"feature": "position_name_Information Technology Sr Manager", "influence": 1.7000000476837158}, {"feature": "manager_name_Nathan Ducote", "influence": 1.5}]}, {"job": "Graphics", "count": 156, "features": [{"feature": "hire_date_year", "ideal": "2008–2022"}, {"feature": "years_of_experience", "ideal": "3–17"}, {"feature": "business_division_name_Regional - West", "ideal": "Regional - West"}, {"feature": "work_location_name_MI - Kalamazoo Carton", "ideal": "MI - Kalamazoo Carton"}, {"feature": "manager_name_Becky Zinck", "ideal": "Becky Zinck"}], "influence": [{"feature": "hire_date_year", "influence": 44.70000076293945}, {"feature": "years_of_experience", "influence": 37.0}, {"feature": "business_division_name_Regional - West", "influence": 11.600000381469727}, {"feature": "work_location_name_MI - Kalamazoo Carton", "influence": 2.0999999046325684}, {"feature": "manager_name_Becky Zinck", "influence": 1.7000000476837158}]}, {"job": "Quality", "count": 156, "features": [{"feature": "work_location_name_CA - Oroville Carton", "ideal": "CA - Oroville Carton"}, {"feature": "hire_date_year", "ideal": "2015–2023"}, {"feature": "years_of_experience", "ideal": "3–10"}, {"feature": "work_location_name_Virtual Office IN US10", "ideal": "Virtual Office IN US10"}, {"feature": "business_division_name_SUS Mills", "ideal": "SUS Mills"}], "influence": [{"feature": "work_location_name_CA - Oroville Carton", "influence": 28.299999237060547}, {"feature": "hire_date_year", "influence": 19.799999237060547}, {"feature": "years_of_experience", "influence": 16.100000381469727}, {"feature": "work_location_name_Virtual Office IN US10", "influence": 14.100000381469727}, {"feature": "business_division_name_SUS Mills", "influence": 12.0}]}, {"job": "Health, Safety & Environmental", "count": 94, "features": [{"feature": "years_of_experience", "ideal": "2–6"}, {"feature": "hire_date_year", "ideal": "2019–2023"}, {"feature": "change_type_Retirement", "ideal": "Retirement"}, {"feature": "job_start_date_2024-08-03", "ideal": "2024-08-03"}, {"feature": "work_location_name_GA - Atlanta HQ", "ideal": "GA - Atlanta HQ"}], "influence": [{"feature": "years_of_experience", "influence": 51.79999923706055}, {"feature": "hire_date_year", "influence": 30.799999237060547}, {"feature": "change_type_Retirement", "influence": 9.199999809265137}, {"feature": "job_start_date_2024-08-03", "influence": 7.800000190734863}, {"feature": "work_location_name_GA - Atlanta HQ", "influence": 0.10000000149011612}]}, {"job": "Research & Development", "count": 77, "features": [{"feature": "hire_date_year", "ideal": "2007–2021"}, {"feature": "years_of_experience", "ideal": "4–19"}, {"feature": "manager_name_Chris Ross", "ideal": "Chris Ross"}, {"feature": "manager_name_Bryan Ortman", "ideal": "Bryan Ortman"}, {"feature": "promotion_count", "ideal": "0–0"}], "influence": [{"feature": "hire_date_year", "influence": 69.9000015258789}, {"feature": "years_of_experience", "influence": 25.0}, {"feature": "manager_name_Chris Ross", "influence": 1.899999976158142}, {"feature": "manager_name_Bryan Ortman", "influence": 1.600000023841858}, {"feature": "promotion_count", "influence": 1.100000023841858}]}];
+
+    // Build an index by job title for quick lookup
+    const byJob = new Map(RAW.map(d => [d.job, d]));
+
+    const jobSelect = document.getElementById('jobSelect');
+    const jobFilter = document.getElementById('jobFilter');
+    const selJobEl = document.getElementById('selJob');
+    const selCountEl = document.getElementById('selCount');
+    const featTable = document.getElementById('featTable').querySelector('tbody');
+    const bars = document.getElementById('bars');
+
+    function populateJobs(options = RAW) {
+      jobSelect.innerHTML = '';
+      const jobs = options.map(d => d.job).sort((a,b) => a.localeCompare(b));
+      for (const j of jobs) {
+        const opt = document.createElement('option');
+        opt.value = j; opt.textContent = j;
+        jobSelect.appendChild(opt);
+      }
+      if (jobs.length) { selectJob(jobs[0]); }
+      else {
+        selJobEl.textContent = '—';
+        selCountEl.textContent = '—';
+        featTable.innerHTML = '<tr><td colspan="3" class="empty">No matching jobs…</td></tr>';
+        bars.innerHTML = '<div class="empty">No matching jobs…</div>';
+      }
+    }
+
+    function selectJob(jobName) {
+      const d = byJob.get(jobName);
+      if (!d) return;
+      jobSelect.value = jobName;
+      selJobEl.textContent = jobName;
+      selCountEl.textContent = d.count?.toLocaleString?.() ?? d.count ?? '—';
+
+      // Map influence by feature for quick lookup
+      const infl = new Map((d.influence || []).map(x => [x.feature, x.influence]));
+      // Build rows
+      const rows = (d.features || []).map(f => {
+        const pct = infl.get(f.feature);
+        return `<tr>
+          <td><span class="stack"><strong>${escapeHtml(prettyName(f.feature))}</strong><span class="muted">${escapeHtml(f.feature)}</span></span></td>
+          <td>${escapeHtml(String(f.ideal))}</td>
+          <td>${pct !== undefined ? pct.toFixed(1) : '—'}</td>
+        </tr>`;
+      });
+      featTable.innerHTML = rows.length ? rows.join('') :
+        '<tr><td colspan="3" class="empty">No feature guidance found…</td></tr>';
+
+      // Bars (top 10 by influence)
+      const sorted = (d.influence || []).slice().sort((a,b) => b.influence - a.influence).slice(0, 10);
+      if (!sorted.length) {
+        bars.innerHTML = '<div class="empty">No influence metrics found…</div>';
+      } else {
+        const max = Math.max(...sorted.map(x => x.influence || 0), 1);
+        bars.innerHTML = sorted.map(x => {
+          const w = Math.max(2, (x.influence / max) * 100);
+          return `<div class="bar-row">
+            <div class="stack">
+              <strong>${escapeHtml(prettyName(x.feature))}</strong>
+              <span class="muted">${escapeHtml(x.feature)}</span>
+            </div>
+            <div style="min-width:220px; display:flex; gap:8px; align-items:center;">
+              <div class="bar-track" style="width:160px;"><div class="bar-fill" style="width:${w}%"></div></div>
+              <div class="muted" style="min-width:44px; text-align:right;">${x.influence.toFixed(1)}%</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    function prettyName(key) {
+      return key.replace(/_/g, ' ')
+                .replace(/([a-z])/g, (m,c) => c.toUpperCase());
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    // Filter logic
+    jobFilter.addEventListener('input', () => {
+      const q = jobFilter.value.trim().toLowerCase();
+      if (!q) { populateJobs(RAW); return; }
+      const filtered = RAW.filter(d => d.job.toLowerCase().includes(q));
+      populateJobs(filtered);
+    });
+
+    // Change handler
+    jobSelect.addEventListener('change', (e) => selectJob(e.target.value));
+
+    // Copy buttons
+    document.getElementById('copySummary').addEventListener('click', () => {
+      const job = jobSelect.value;
+      const d = byJob.get(job);
+      if (!d) return;
+      const lines = [];
+      lines.push(`Job: ${job}`);
+      lines.push(`Employees in cluster: ${d.count}`);
+      lines.push('Ideal features:');
+      for (const f of (d.features||[])) {
+        lines.push(`  • ${f.feature}: ${f.ideal}`);
+      }
+      const txt = lines.join('\n');
+      navigator.clipboard.writeText(txt).then(() => alert('Summary copied!'));
+    });
+
+    document.getElementById('copyJSON').addEventListener('click', () => {
+      const job = jobSelect.value;
+      const d = byJob.get(job);
+      if (!d) return;
+      navigator.clipboard.writeText(JSON.stringify(d, null, 2)).then(() => alert('JSON copied!'));
+    });
+
+    // Init
+    populateJobs(RAW);
+  </script>
+</body>
+</html>
