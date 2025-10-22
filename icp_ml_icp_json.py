@@ -21,8 +21,7 @@ This notebook reads your **real employee dataset (CSV)** and produces an ICP JSO
 > Tip: If you are in Colab, run the install cell first (it is safe to re-run).
 """
 
-from google.colab import drive
-drive.mount('/content/drive')
+
 
 # Commented out IPython magic to ensure Python compatibility.
 # Optional installs (safe to skip if already installed)
@@ -50,7 +49,7 @@ Update **`CSV_PATH`** and the `COLS` mapping below to match your dataset. Only l
 ### === REQUIRED: set your CSV path ===
 # Example: if using Colab + Drive, mount then set the path like
 # CSV_PATH = "/content/drive/MyDrive/hr/employee_icp.csv"
-CSV_PATH = "/content/drive/MyDrive/Indeed/emp_history_data2.csv"  # <-- change me
+CSV_PATH = "https://github.com/balajilsm/ICPProfile/blob/main/emp_history_data2.csv"  # <-- change me
 
 ### === REQUIRED: position to compute ICP for ===
 POSITION_NAME = "HR Analyst"  # e.g., "HR Analyst", "Data Engineer", etc.
